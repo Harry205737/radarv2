@@ -1,1 +1,50 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Minimal Radar</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <style>
+        body { margin: 0; background: #000; color: white; font-family: sans-serif; text-align: center; }
+        #radar-container { position: relative; display: inline-block; width: 512px; height: 512px; }
+        canvas { position: absolute; top: 0; left: 0; width: 512px; height: 512px; }
+        .controls { padding: 10px; }
+    </style>
+</head>
+<body>
 
+    <div class="controls">
+        <b>Laverton 128km</b><br>
+        <button onclick="updateRadar()">Refresh Radar</button>
+    </div>
+
+    <div id="radar-container">
+        <img src="128melradar.jpg" width="512" height="512" style="display:block;">
+        <canvas id="radarCanvas" width="512" height="512"></canvas>
+    </div>
+
+    <script>
+        const canvas = document.getElementById('radarCanvas');
+        const ctx = canvas.getContext('2d');
+
+        function updateRadar() {
+            const radarImage = new Image();
+            // IDR023 is the BoM code for Melbourne (Laverton) 128km
+            // The t-parameter forces a fresh download to bypass cache
+            const timestamp = Math.floor(Date.now() / 60000); 
+            radarImage.src = "https://web.bom.gov.au/radar/IDR023.T." + timestamp + ".png";
+
+            radarImage.onload = function() {
+                ctx.clearRect(0, 0, canvas.width, canvas.height);
+                ctx.drawImage(radarImage, 0, 0, 512, 512);
+                console.log("Radar updated at: " + new Date().toLocaleTimeString());
+            };
+        }
+
+        // Run on load
+        updateRadar();
+        // Auto-refresh every 5 minutes
+        setInterval(updateRadar, 300000);
+    </script>
+
+</body>
+</html>
