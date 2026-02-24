@@ -1,25 +1,25 @@
 <!DOCTYPE html>
 <html>
-<title>RADAR</title>
-<body bgcolor=#fff style=margin:0;overflow:hidden>
+<title>RADAR 512</title>
+<body bgcolor=#000 style=margin:0;overflow:hidden>
 
-<div style="position:relative;width:256px;height:256px;margin:auto;overflow:hidden;background:#000;">
- <div style="position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);z-index:9;pointer-events:none;color:white;text-shadow:1px 1px 2px black;">+</div>
+<div style="position:relative;width:512px;height:512px;margin:auto;overflow:hidden;background:#000;">
+ <div style="position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);z-index:9;pointer-events:none;color:white;text-shadow:1px 1px 2px black;font-size:24px;">+</div>
  
- <div id=V style="background:url('128melradar.jpg') no-repeat;background-size:256px 256px;width:256px;height:256px;position:absolute;z-index:1;"></div>
+ <div id=V style="background:url('128melradar.jpg') no-repeat;background-size:512px 512px;width:512px;height:512px;position:absolute;z-index:1;"></div>
  
- <div style="position:absolute;top:0;left:0;width:256px;height:256px;z-index:2;overflow:hidden;">
-    <img id=RI style="position:absolute;opacity:0.75;">
+ <div style="position:absolute;top:0;left:0;width:512px;height:512px;z-index:2;overflow:hidden;">
+    <img id=RI style="position:absolute;opacity:0.8;">
  </div>
  
- <div style="position:absolute;top:10px;right:10px;width:75px;border-bottom:2px solid #fff;text-align:right;font:10px sans-serif;color:white;text-shadow:1px 1px 2px black;z-index:10;">50km</div>
+ <div style="position:absolute;top:20px;right:20px;width:100px;border-bottom:2px solid #fff;text-align:right;font:14px sans-serif;color:white;text-shadow:1px 1px 2px black;z-index:10;">50km</div>
 </div>
 
-<div style="text-align:center;margin-top:8px;">
- <button onclick=c(-1)><</button>
- <button onclick="f(-37.855, 144.755)">REFRESH</button>
- <button onclick=c(1)>></button>
- <p id=M style="margin:5px 0 0 0;font-family:sans-serif;font-size:14px;">Zoom 6 Active</p>
+<div style="text-align:center;margin-top:15px;color:white;font-family:sans-serif;">
+ <button style="padding:10px 20px;" onclick=c(-1)> < </button>
+ <button style="padding:10px 20px;" onclick="f(-37.855, 144.755)">REFRESH</button>
+ <button style="padding:10px 20px;" onclick=c(1)> > </button>
+ <p id=M style="margin:10px 0;font-size:16px;">Calibrating Zoom 7...</p>
 </div>
 
 <script>
@@ -28,22 +28,23 @@ V=document.getElementById('V');M=document.getElementById('M');RI=document.getEle
 f=(y,x)=>{
  fetch('https://api.rainviewer.com/public/weather-maps.json').then(r=>r.json()).then(j=>{
   t=j.radar.past.at(-1).time;
-  z=6; v=Math.pow(2,z);
+  // Zoom 7 is the correct visual match for BoM 128km
+  z=7; v=Math.pow(2,z);
   
-  // Calculate exact global pixel position for the lat/lon
-  const xPixel = (x + 180) / 360 * v * 256;
+  // Calculate global pixel position at 512px tile size
+  const xPixel = (x + 180) / 360 * v * 512;
   const latRad = y * Math.PI / 180;
-  const yPixel = (1 - Math.log(Math.tan(latRad) + 1 / Math.cos(latRad)) / Math.PI) / 2 * v * 256;
+  const yPixel = (1 - Math.log(Math.tan(latRad) + 1 / Math.cos(latRad)) / Math.PI) / 2 * v * 512;
   
-  const tileX = 0|(xPixel / 256);
-  const tileY = 0|(yPixel / 256);
+  const tileX = 0|(xPixel / 512);
+  const tileY = 0|(yPixel / 512);
   
-  // Calculate how many pixels to shift the 256px tile to center our point
-  const offsetX = 128 - (xPixel % 256);
-  const offsetY = 128 - (yPixel % 256);
+  // Center the 512px tile based on the sub-pixel offset
+  const offsetX = 256 - (xPixel % 512);
+  const offsetY = 256 - (yPixel % 512);
 
   H.push({
-      u: `${j.host}/v2/radar/${t}/256/${z}/${tileX}/${tileY}/2/1_1.png`,
+      u: `${j.host}/v2/radar/${t}/512/${z}/${tileX}/${tileY}/2/1_1.png`,
       s: new Date(t * 1000).toLocaleTimeString(),
       ox: offsetX,
       oy: offsetY
@@ -65,7 +66,7 @@ d=()=>{
 
 c=n=>{if(H[I+n]){I+=n;d()}};
 
-// Load Laverton at Zoom 6
+// Center on Laverton
 f(-37.855, 144.755);
 </script>
 
