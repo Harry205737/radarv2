@@ -1,6 +1,6 @@
 <!DOCTYPE html>
 <html>
-<title>RADAR LITE</title>
+<title>RADAR SCALE FIX</title>
 <body bgcolor=#000 style=margin:0;overflow:hidden>
 
 <div style="position:relative;width:256px;height:256px;margin:auto;overflow:hidden;background:#000;">
@@ -8,8 +8,8 @@
  
  <div id=V style="background:url('128melradar.jpg') no-repeat;background-size:256px 256px;width:256px;height:256px;position:absolute;z-index:1;"></div>
  
- <div id=R_CONT style="position:absolute;top:0;left:0;width:256px;height:256px;z-index:2;overflow:hidden;">
-    <img id=RI style="position:absolute;opacity:0.8;">
+ <div style="position:absolute;top:0;left:0;width:256px;height:256px;z-index:2;overflow:hidden;">
+    <img id=RI style="position:absolute;opacity:0.8;width:512px;height:512px;image-rendering:pixelated;">
  </div>
 </div>
 
@@ -17,7 +17,7 @@
  <button onclick=c(-1)><</button>
  <button onclick="f(-37.855, 144.755)">REFRESH</button>
  <button onclick=c(1)>></button>
- <p id=M style="margin:5px 0 0 0;font-size:12px;">Syncing...</p>
+ <p id=M style="margin:5px 0 0 0;font-size:12px;">Zoom 6 (Stretched)</p>
 </div>
 
 <script>
@@ -26,9 +26,9 @@ V=document.getElementById('V');M=document.getElementById('M');RI=document.getEle
 f=(y,x)=>{
  fetch('https://api.rainviewer.com/public/weather-maps.json').then(r=>r.json()).then(j=>{
   t=j.radar.past.at(-1).time;
-  // Zoom 7 matches your map scale; 256 keeps bandwidth low
-  z=7; v=Math.pow(2,z);
+  z=6; v=Math.pow(2,z);
   
+  // 1. Calculate pixel position on a standard 256px tile grid
   const xPixel = (x + 180) / 360 * v * 256;
   const latRad = y * Math.PI / 180;
   const yPixel = (1 - Math.log(Math.tan(latRad) + 1 / Math.cos(latRad)) / Math.PI) / 2 * v * 256;
@@ -36,13 +36,13 @@ f=(y,x)=>{
   const tileX = 0|(xPixel / 256);
   const tileY = 0|(yPixel / 256);
   
-  // Shift the tile so Laverton is exactly at 128,128 (the center)
-  const offsetX = 128 - (xPixel % 256);
-  const offsetY = 128 - (yPixel % 256);
+  // 2. Because we are stretching the 256px image to 512px, 
+  // we have to double the offset math to keep Laverton centered.
+  const offsetX = 128 - ((xPixel % 256) * 2);
+  const offsetY = 128 - ((yPixel % 256) * 2);
 
-  // Color '2' is the BoM-style Blue-Yellow-Red palette
   H.push({
-      u: `${j.host}/v2/radar/${t}/256/${z}/${tileX}/${tileY}/1/1_1.png`,
+      u: `${j.host}/v2/radar/${t}/256/${z}/${tileX}/${tileY}/2/1_1.png`,
       s: new Date(t * 1000).toLocaleTimeString(),
       ox: offsetX,
       oy: offsetY
@@ -64,7 +64,6 @@ d=()=>{
 
 c=n=>{if(H[I+n]){I+=n;d()}};
 
-// Load Laverton Default
 f(-37.855, 144.755);
 </script>
 
