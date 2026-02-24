@@ -1,38 +1,19 @@
 <!DOCTYPE html><html><title>RADAR</title>
-<body bgcolor=#fff style=margin:0;overflow:hidden>
-<div style="position:relative;width:256px;height:256px;margin:auto;overflow:hidden">
- <div style="position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);z-index:9;pointer-events:none">+</div>
- <div id=V style="background:url('128melradar.jpg')0/256px;width:256px;height:256px"></div>
- <div style="position:absolute;top:10px;right:10px;width:75px;border-bottom:2px solid #000;text-align:right;font:10px sans-serif">50km</div>
-</div>
-<div style=text-align:center>
- <button onclick=c(-1)><</button>
- <button onclick=f(-37.855,144.755)>REFRESH</button>
- <button onclick=c(1)>></button>
- <p id=M style=margin:0>...</p>
-</div>
+<body style="text-align:center;font:sans-serif;background:#fff">
+ <h3>128km Melbourne Radar</h3>
+ <div style="position:relative;width:256px;height:256px;margin:auto;overflow:hidden;background:url('128melradar.jpg')0/256px">
+  <div style="position:absolute;top:50%;left:50%;transform:translate(-50%,-50%)">+</div>
+  <img id=R style="position:absolute;opacity:.7;width:512px;image-rendering:pixelated">
+ </div>
+ <button onclick=c(-1)><</button><button onclick=f()>REFRESH</button><button onclick=c(1)>></button>
+ <p id=M>...</p>
 <script>
-V=document.getElementById('V');M=document.getElementById('M');H=[];I=-1;
-f=(y,x)=>{
- fetch('https://api.rainviewer.com/public/weather-maps.json').then(r=>r.json()).then(j=>{
-  t=j.radar.past.at(-1).time;v=64;
-  p=x/360+.5; q=(1-Math.log(Math.tan(y*Math.PI/180)+1/Math.cos(y*Math.PI/180))/Math.PI)/2;
-  // We use color '2' for BoM colors and calculate the 512px offset
-  H.push({
-   u:`${j.host}/v2/radar/${t}/256/6/${0|p*v}/${0|q*v}/2/1_1.png`,
-   s:new Date(t*1000).toLocaleTimeString(),
-   ox:128-(p*v%1*512),
-   oy:128-(q*v%1*512)
-  });
-  I=H.length-1;d()
- }).catch(e=>M.innerText='!');
-};
-d=()=>{if(H[I]){
- // The magic: width 512px and image-rendering:pixelated
- V.innerHTML=`<img src="${H[I].u}" style="position:absolute;width:512px;left:${H[I].ox}px;top:${H[I].oy}px;opacity:0.75;image-rendering:pixelated">`;
- M.innerText=H[I].s
-}};
-c=n=>{if(H[I+n]){I+=n;d()}};
-// Start at Laverton
-f(-37.855,144.755);
+H=[];I=-1;y=-37.855;x=144.755;
+f=()=>{fetch('https://api.rainviewer.com/public/weather-maps.json').then(r=>r.json()).then(j=>{
+ t=j.radar.past.at(-1).time;v=64; // v=64 is Zoom 6
+ p=x/360+.5;q=(1-Math.log(Math.tan(y*Math.PI/180)+1/Math.cos(y*Math.PI/180))/Math.PI)/2;
+ H.push({u:`${j.host}/v2/radar/${t}/256/6/${0|p*v}/${0|q*v}/2/1_1.png`,t:new Date(t*1000).toLocaleTimeString(),x:128-(p*v%1*512),y:128-(q*v%1*512)});
+ I=H.length-1;d()})};
+d=()=>{if(H[I]){R.src=H[I].u;R.style.left=H[I].x+'px';R.style.top=H[I].y+'px';M.innerText=H[I].t}};
+c=n=>{if(H[I+n]){I+=n;d()}};f()
 </script></html>
