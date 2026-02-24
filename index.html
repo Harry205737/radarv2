@@ -1,61 +1,33 @@
 <!DOCTYPE html>
 <html>
-<head>
-    <title>RADAR 256</title>
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <style>
-        body { background: #000; color: #fff; font-family: sans-serif; text-align: center; margin: 0; padding: 5px; }
-        #map-box { position: relative; width: 256px; height: 256px; margin: 0 auto; background: #222; }
-        #bg, #radar { position: absolute; top: 0; left: 0; width: 256px; height: 256px; }
-        #bg { z-index: 1; }
-        #radar { z-index: 2; opacity: 0.75; }
-        .ui { margin: 10px 0; font-size: 12px; }
-        button { padding: 6px 12px; background: #444; color: #fff; border: 1px solid #666; cursor: pointer; }
-    </style>
-</head>
-<body>
-
-    <div class="ui">
-        <b>Laverton 128km</b><br>
-        <span id="msg">Initialising...</span><br>
-        <button onclick="f()">REFRESH</button>
-    </div>
-
-    <div id="map-box">
-        <img id="bg" src="128melradar.jpg">
-        <img id="radar">
-    </div>
-
-    <script>
-        const M = document.getElementById('msg');
-        const R = document.getElementById('radar');
-
-        const f = () => {
-            M.innerText = 'Syncing...';
-            // We fetch the JSON to get the most recent valid timestamp
-            fetch('https://api.rainviewer.com/public/weather-maps.json')
-                .then(r => r.json())
-                .then(j => {
-                    const t = j.radar.past.at(-1).time;
-                    const host = j.host || 'https://tilecache.rainviewer.com';
-                    
-                    // Zoom 6, X 56, Y 39 = Melbourne Area
-                    // Color 1 (Original), Smooth 1, Snow 1
-                    const url = `${host}/v2/radar/${t}/256/6/56/39/1/1_1.png`;
-                    
-                    R.src = url;
-                    M.innerText = 'Updated: ' + new Date(t * 1000).toLocaleTimeString();
-                })
-                .catch(() => { 
-                    M.innerText = 'API Error - Retrying...';
-                    // Fallback attempt with a static host if JSON fails
-                    const fallbackTime = Math.floor(Date.now() / 1000) - (Math.floor(Date.now() / 1000) % 600);
-                    R.src = `https://tilecache.rainviewer.com/v2/radar/${fallbackTime}/256/6/56/39/1/1_1.png`;
-                });
-        };
-
-        f();
-        setInterval(f, 300000); 
-    </script>
-</body>
+<title>RADAR</title>
+<body bgcolor=#fff style=margin:0;overflow:hidden>
+<div style=position:relative;width:256px;margin:auto>
+ <div style="position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);z-index:9;pointer-events:none">+</div>
+ <div id=V style="background:url('128melradar.jpg') no-repeat;background-size:256px 256px;width:256px;height:256px"></div>
+ <div style="position:absolute;top:10;right:10;width:75px;border-bottom:2px solid #000;text-align:right;font:10px sans-serif">50km</div>
+</div>
+<div style=text-align:center>
+ <button onclick=c(-1)><</button>
+ <button onclick=m()>GO</button>
+ <button onclick=c(1)>></button>
+ <button onclick="lt.value=-37.86;ln.value=144.75;m()">LAVERTON</button><br>
+ <input id=lt placeholder=Lat size=3><input id=ln placeholder=Lon size=3>
+ <p id=M style=margin:0>...</p>
+</div>
+<script>
+V=document.getElementById('V');M=document.getElementById('M');H=[];I=-1;
+f=(y,x)=>{
+ fetch('https://api.rainviewer.com/public/weather-maps.json').then(r=>r.json()).then(j=>{
+  t=j.radar.past.at(-1).time;v=64;r=y*Math.PI/180;
+  X=0|(x+180)/360*v;Y=0|(1-Math.log(Math.tan(r)+1/Math.cos(r))/Math.PI)/2*v;
+  H.push({u:`${j.host}/v2/radar/${t}/256/6/${X}/${Y}/0/0_0.png`,s:new Date(t*1000).toLocaleTimeString()});
+  I=H.length-1;d()
+ }).catch(e=>M.innerText='!');
+};
+d=()=>{if(H[I]){V.innerHTML=`<img src="${H[I].u}" width=256 height=256 style=display:block>`;M.innerText=H[I].s}};
+c=n=>{if(H[I+n]){I+=n;d()}};
+m=()=>f(1*lt.value,1*ln.value);
+/* GPS function removed */
+</script>
 </html>
