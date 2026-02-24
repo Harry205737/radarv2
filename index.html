@@ -1,50 +1,58 @@
 <!DOCTYPE html>
 <html>
 <head>
-    <title>Minimal Radar</title>
+    <title>Radar Lite</title>
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <style>
-        body { margin: 0; background: #000; color: white; font-family: sans-serif; text-align: center; }
-        #radar-container { position: relative; display: inline-block; width: 512px; height: 512px; }
-        canvas { position: absolute; top: 0; left: 0; width: 512px; height: 512px; }
-        .controls { padding: 10px; }
+        body { background: #222; color: #fff; font-family: sans-serif; text-align: center; margin: 0; }
+        #wrapper { position: relative; width: 512px; height: 512px; margin: 10px auto; border: 1px solid #444; }
+        img, canvas { position: absolute; top: 0; left: 0; width: 512px; height: 512px; }
+        .ui { padding: 15px; }
     </style>
 </head>
 <body>
 
-    <div class="controls">
-        <b>Laverton 128km</b><br>
-        <button onclick="updateRadar()">Refresh Radar</button>
-    </div>
+<div class="ui">
+    <strong>Laverton 128km</strong><br>
+    <small id="status">Loading...</small><br>
+    <button onclick="fetchRadar()">Refresh Now</button>
+</div>
 
-    <div id="radar-container">
-        <img src="128melradar.jpg" width="512" height="512" style="display:block;">
-        <canvas id="radarCanvas" width="512" height="512"></canvas>
-    </div>
+<div id="wrapper">
+    <img src="128melradar.jpg">
+    <canvas id="radar" width="512" height="512"></canvas>
+</div>
 
-    <script>
-        const canvas = document.getElementById('radarCanvas');
-        const ctx = canvas.getContext('2d');
+<script>
+    const canvas = document.getElementById('radar');
+    const ctx = canvas.getContext('2d');
+    const status = document.getElementById('status');
 
-        function updateRadar() {
-            const radarImage = new Image();
-            // IDR023 is the BoM code for Melbourne (Laverton) 128km
-            // The t-parameter forces a fresh download to bypass cache
-            const timestamp = Math.floor(Date.now() / 60000); 
-            radarImage.src = "https://web.bom.gov.au/radar/IDR023.T." + timestamp + ".png";
+    function fetchRadar() {
+        status.innerText = "Fetching...";
+        const img = new Image();
+        
+        // Use the CDN link. IDR023 is Laverton 128km.
+        // We add a cache-buster at the end.
+        const cacheBuster = Math.floor(Date.now() / 60000); 
+        img.crossOrigin = "anonymous"; 
+        img.src = "https://api.allorigins.win/raw?url=" + encodeURIComponent("http://www.bom.gov.au/radar/IDR023.T.png?v=" + cacheBuster);
 
-            radarImage.onload = function() {
-                ctx.clearRect(0, 0, canvas.width, canvas.height);
-                ctx.drawImage(radarImage, 0, 0, 512, 512);
-                console.log("Radar updated at: " + new Date().toLocaleTimeString());
-            };
-        }
+        img.onload = function() {
+            ctx.clearRect(0, 0, 512, 512);
+            ctx.drawImage(img, 0, 0, 512, 512);
+            status.innerText = "Last update: " + new Date().toLocaleTimeString();
+        };
 
-        // Run on load
-        updateRadar();
-        // Auto-refresh every 5 minutes
-        setInterval(updateRadar, 300000);
-    </script>
+        img.onerror = function() {
+            status.innerText = "Failed to load radar. BoM might be blocking the request.";
+            console.error("Radar load failed.");
+        };
+    }
+
+    fetchRadar();
+    setInterval(fetchRadar, 300000); // 5 min auto-refresh
+</script>
 
 </body>
 </html>
