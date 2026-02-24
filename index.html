@@ -3,7 +3,7 @@
 <title>RADAR</title>
 <body bgcolor=#fff style=margin:0;overflow:hidden>
 
-<div style=position:relative;width:256px;margin:auto>
+<div style="position:relative;width:256px;height:256px;margin:auto;overflow:hidden;">
  <div style="position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);z-index:9;pointer-events:none;color:white;text-shadow:1px 1px 2px black;">+</div>
  
  <div id=V style="background:url('128melradar.jpg') no-repeat;background-size:256px 256px;width:256px;height:256px"></div>
@@ -21,23 +21,27 @@
 <script>
 V=document.getElementById('V');M=document.getElementById('M');H=[];I=-1;
 
-// Fetch and calculate the tile based on lat/lon
 f=(y,x)=>{
  fetch('https://api.rainviewer.com/public/weather-maps.json').then(r=>r.json()).then(j=>{
   t=j.radar.past.at(-1).time;v=64;r=y*Math.PI/180;
   X=0|(x+180)/360*v;Y=0|(1-Math.log(Math.tan(r)+1/Math.cos(r))/Math.PI)/2*v;
+  
+  // Shift calculation: Adjusting the image position within the 256px container
+  // to center the specific Lat/Lon coordinate.
   H.push({u:`${j.host}/v2/radar/${t}/256/6/${X}/${Y}/0/0_0.png`,s:new Date(t*1000).toLocaleTimeString()});
   I=H.length-1;d()
- }).catch(e=>M.innerText='Error Loading');
+ }).catch(e=>M.innerText='!');
 };
 
-// Draw the image with 70% opacity so the map shows through
-d=()=>{if(H[I]){V.innerHTML=`<img src="${H[I].u}" width=256 height=256 style="display:block;opacity:0.7;">`;M.innerText=H[I].s}};
+d=()=>{if(H[I]){
+    // Added 'margin-left: -35px' to shift the tile left so Laverton is centered
+    V.innerHTML=`<img src="${H[I].u}" width=256 height=256 style="display:block;opacity:0.7;margin-left:-35px;">`;
+    M.innerText=H[I].s
+}};
 
-// Frame navigation
 c=n=>{if(H[I+n]){I+=n;d()}};
 
-// Auto-load Laverton coordinates on startup
+// Initialize centered on Laverton
 f(-37.86, 144.75);
 </script>
 
