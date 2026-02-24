@@ -2,32 +2,44 @@
 <html>
 <title>RADAR</title>
 <body bgcolor=#fff style=margin:0;overflow:hidden>
+
 <div style=position:relative;width:256px;margin:auto>
- <div style="position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);z-index:9;pointer-events:none">+</div>
+ <div style="position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);z-index:9;pointer-events:none;color:white;text-shadow:1px 1px 2px black;">+</div>
+ 
  <div id=V style="background:url('128melradar.jpg') no-repeat;background-size:256px 256px;width:256px;height:256px"></div>
- <div style="position:absolute;top:10;right:10;width:75px;border-bottom:2px solid #000;text-align:right;font:10px sans-serif">50km</div>
+ 
+ <div style="position:absolute;top:10px;right:10px;width:75px;border-bottom:2px solid #fff;text-align:right;font:10px sans-serif;color:white;text-shadow:1px 1px 2px black;">50km</div>
 </div>
-<div style=text-align:center>
+
+<div style="text-align:center;margin-top:8px;">
  <button onclick=c(-1)><</button>
- <button onclick=m()>GO</button>
+ <button onclick="f(-37.86, 144.75)">REFRESH</button>
  <button onclick=c(1)>></button>
- <button onclick="lt.value=-37.86;ln.value=144.75;m()">LAVERTON</button><br>
- <input id=lt placeholder=Lat size=3><input id=ln placeholder=Lon size=3>
- <p id=M style=margin:0>...</p>
+ <p id=M style="margin:5px 0 0 0;font-family:sans-serif;font-size:14px;">Loading...</p>
 </div>
+
 <script>
 V=document.getElementById('V');M=document.getElementById('M');H=[];I=-1;
+
+// Fetch and calculate the tile based on lat/lon
 f=(y,x)=>{
  fetch('https://api.rainviewer.com/public/weather-maps.json').then(r=>r.json()).then(j=>{
   t=j.radar.past.at(-1).time;v=64;r=y*Math.PI/180;
   X=0|(x+180)/360*v;Y=0|(1-Math.log(Math.tan(r)+1/Math.cos(r))/Math.PI)/2*v;
   H.push({u:`${j.host}/v2/radar/${t}/256/6/${X}/${Y}/0/0_0.png`,s:new Date(t*1000).toLocaleTimeString()});
   I=H.length-1;d()
- }).catch(e=>M.innerText='!');
+ }).catch(e=>M.innerText='Error Loading');
 };
-d=()=>{if(H[I]){V.innerHTML=`<img src="${H[I].u}" width=256 height=256 style=display:block>`;M.innerText=H[I].s}};
+
+// Draw the image with 70% opacity so the map shows through
+d=()=>{if(H[I]){V.innerHTML=`<img src="${H[I].u}" width=256 height=256 style="display:block;opacity:0.7;">`;M.innerText=H[I].s}};
+
+// Frame navigation
 c=n=>{if(H[I+n]){I+=n;d()}};
-m=()=>f(1*lt.value,1*ln.value);
-/* GPS function removed */
+
+// Auto-load Laverton coordinates on startup
+f(-37.86, 144.75);
 </script>
+
+</body>
 </html>
