@@ -1,25 +1,24 @@
 <!DOCTYPE html>
 <html>
 <head>
-    <title>Radar Lite</title>
+    <title>RADAR 256</title>
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <style>
-        body { background: #000; color: #fff; font-family: sans-serif; text-align: center; margin: 0; padding: 10px; }
-        #map-box { position: relative; width: 512px; height: 512px; margin: 0 auto; background: #222; overflow: hidden; }
-        /* Layer 1: Your local map */
-        #bg { position: absolute; top: 0; left: 0; width: 512px; height: 512px; z-index: 1; }
-        /* Layer 2: RainViewer Tile */
-        #radar { position: absolute; top: 0; left: 0; width: 512px; height: 512px; z-index: 2; opacity: 0.7; }
-        .ctrl { margin: 10px 0; }
-        button { padding: 8px 15px; background: #333; color: #fff; border: 1px solid #555; cursor: pointer; }
+        body { background: #000; color: #fff; font-family: sans-serif; text-align: center; margin: 0; padding: 5px; }
+        /* Container and images locked to 256px */
+        #map-box { position: relative; width: 256px; height: 256px; margin: 0 auto; overflow: hidden; background: #C4A484; }
+        #bg { position: absolute; top: 0; left: 0; width: 256px; height: 256px; z-index: 1; }
+        #radar { position: absolute; top: 0; left: 0; width: 256px; height: 256px; z-index: 2; opacity: 0.7; }
+        .ui { margin: 10px 0; font-size: 12px; }
+        button { padding: 5px 10px; background: #333; color: #fff; border: 1px solid #555; }
     </style>
 </head>
 <body>
 
-    <div class="ctrl">
-        <strong>Laverton 128km</strong><br>
-        <span id="ts" style="font-size: 12px; color: #888;">...</span><br>
-        <button onclick="fetchRadar()">REFRESH</button>
+    <div class="ui">
+        <b>Laverton 128km</b><br>
+        <span id="msg">...</span><br>
+        <button onclick="f()">REFRESH</button>
     </div>
 
     <div id="map-box">
@@ -28,39 +27,25 @@
     </div>
 
     <script>
-        const M = document.getElementById('ts');
+        const M = document.getElementById('msg');
         const R = document.getElementById('radar');
 
-        const fetchRadar = () => {
-            M.innerText = 'Syncing...';
-            
+        const f = () => {
+            M.innerText = 'Loading...';
             fetch('https://api.rainviewer.com/public/weather-maps.json')
                 .then(r => r.json())
                 .then(j => {
                     const t = j.radar.past.at(-1).time;
-                    
-                    // FIXED COORDINATES FOR LAVERTON AT ZOOM 6
-                    // This aligns with a 128km radius map
-                    const z = 6;
-                    const x = 56;
-                    const y = 39;
-
-                    // Color 1 is standard RainViewer / 1_1 is smooth snow-off
-                    const url = `${j.host}/v2/radar/${t}/512/${z}/${x}/${y}/1/1_1.png`;
-                    
+                    // Zoom 6, X 56, Y 39 is the 256px tile for Laverton/Melbourne
+                    const url = `${j.host}/v2/radar/${t}/256/6/56/39/1/1_1.png`;
                     R.src = url;
                     M.innerText = new Date(t * 1000).toLocaleTimeString();
                 })
-                .catch(e => {
-                    M.innerText = 'Error loading tile';
-                    console.error(e);
-                });
+                .catch(() => { M.innerText = 'Error!'; });
         };
 
-        // Initial Load
-        fetchRadar();
-        // Auto-refresh every 6 minutes
-        setInterval(fetchRadar, 360000);
+        f();
+        setInterval(f, 300000); // 5 min refresh
     </script>
 </body>
 </html>
