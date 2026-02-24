@@ -1,25 +1,70 @@
 <body style="margin:0;text-align:center">
 <div style="position:relative;width:256px;height:256px;margin:auto;overflow:hidden;background:url(mp.webp)0/256px">
- <div style="position:absolute;top:50%;left:50%;transform:translate(-50%,-50%)">+</div>
+ <div style="position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);z-index:9;text-shadow:1px 1px 1px #fff">+</div>
  <img id=R style="position:absolute;opacity:.7;width:512px;image-rendering:pixelated">
 </div>
 <button onclick=c(-1)><</button><button id=P onclick=p()>PLAY</button><button onclick=f()>LOAD</button><button onclick=c(1)>></button>
 <p id=M style="margin:0">Ready</p>
+
 <script>
-H=[];I=-1;y=-37.85;x=144.75;L=0;
-f=()=>{
- fetch('https://api.rainviewer.com/public/weather-maps.json').then(r=>r.json()).then(j=>{
-  H=[];
-  j.radar.past.slice(-6).map(o=>{
-   let t=o.time,v=64,pX=x/360+.5,pY=(1-Math.log(Math.tan(y*Math.PI/180)+1/Math.cos(y*Math.PI/180))/Math.PI)/2,
-   img=new Image(); // Forces browser to cache
-   img.src=`${j.host}/v2/radar/${t}/256/6/${0|pX*v}/${0|pY*v}/2/1_1.webp`;
-   H.push({i:img,t:new Date(t*1000).toLocaleTimeString([],{hour:'2-digit',minute:'2-digit'}),x:128-(pX*v%1*512),y:128-(pY*v%1*512)});
-  });
-  I=H.length-1;d();
- })
+H=[];I=0;L=0;J=0;y=-37.85;x=144.75;
+
+// Auto-delete cached tiles older than 24 hours (86400 seconds)
+for(k in localStorage)if(1*k&&k<Date.now()/1e3-86400)localStorage.removeItem(k);
+
+// Math for Zoom 6
+E=t=>{
+ let v=64,p=x/360+.5,q=(1-Math.log(Math.tan(y*Math.PI/180)+1/Math.cos(y*Math.PI/180))/Math.PI)/2;
+ return [`https://api.rainviewer.com/v2/radar/${t}/256/6/${0|p*v}/${0|q*v}/2/1_1.webp`,128-(p*v%1*512),128-(q*v%1*512)]
 };
-d=()=>{if(H[I]){R.src=H[I].i.src;R.style.left=H[I].x+'px';R.style.top=H[I].y+'px';M.innerText=H[I].t}};
-c=n=>{I=(I+n+H.length)%H.length;d()};
-p=()=>{if(L){L=clearInterval(L);P.innerText='PLAY'}else{if(!H.length)f();L=setInterval(()=>c(1),600);P.innerText='STOP'}};
+
+// Check LocalStorage -> Download if missing -> Save to LocalStorage as Base64
+S=(t,u,C)=>{
+ let d=localStorage[t];
+ d?C(d):fetch(u).then(r=>r.blob()).then(b=>{
+  let f=new FileReader;f.onload=()=>C(localStorage[t]=f.result);f.readAsDataURL(b)
+ }).catch(e=>0) // Silently fail if completely offline
+};
+
+// Draw frame to screen
+w=()=>{
+ let h=H[I];
+ if(h&&h.d){R.src=h.d;R.style.left=h.X+'px';R.style.top=h.Y+'px';M.innerText=new Date(h.t*1e3).toLocaleTimeString([],{hour:'2-digit',minute:'2-digit'})}
+};
+
+// Next/Prev logic
+c=n=>{if(H.length){I=(I+n+H.length)%H.length;w()}};
+
+// LOAD Button Logic
+f=async()=>{
+ M.innerText='...';
+ // Attempt to fetch JSON list. If no signal, grab timestamps from LocalStorage instead
+ let j=await fetch('https://api.rainviewer.com/public/weather-maps.json').then(r=>r.json()).catch(e=>0);
+ J=j?j.radar.past.map(a=>a.time):Object.keys(localStorage).filter(k=>1*k).sort();
+ 
+ if(J.length){
+  let t=J.at(-1),[u,X,Y]=E(t);
+  H=[{t,X,Y}];I=0; // Load ONLY the current frame
+  S(t,u,d=>{H[0].d=d;w()})
+ }else M.innerText='No Offline Data'
+};
+
+// PLAY Button Logic
+p=async()=>{
+ if(L){L=clearInterval(L);P.innerText='PLAY'}
+ else{
+  P.innerText='STOP';
+  if(!J)await f(); // Fetch list if "Play" is clicked before "Load"
+  if(J&&J.length){
+   // Map out the last 6 frames from history
+   H=J.slice(-6).map(t=>{
+    let [u,X,Y]=E(t);
+    // Background load missing tiles into memory
+    S(t,u,d=>{let h=H.find(a=>a.t==t);if(h){h.d=d;w()}});
+    return {t,X,Y,d:localStorage[t]||''}
+   });
+   L=setInterval(()=>c(1),800)
+  }
+ }
+};
 </script>
