@@ -1,25 +1,28 @@
+<!DOCTYPE html><html><title>Radar</title>
+<meta name="viewport" content="width=device-width,user-scalable=yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
 <body style="margin:0;text-align:center">
-<div style="position:relative;width:256px;height:256px;margin:auto;overflow:hidden;background:url(mp.webp)0/256px">
- <div style="position:absolute;top:50%;left:50%;transform:translate(-50%,-50%)">+</div>
- <img id=R style="position:absolute;opacity:.7;width:512px;image-rendering:pixelated">
+<h3>128km Melbourne Radar</h3>
+<div style="position:relative;width:256px;height:256px;margin:auto;overflow:hidden;background:url(mp.webp)0/256px;border:1px solid #ccc">
+ <div style="position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);z-index:9;text-shadow:1px 1px 1px #fff">+</div>
+ <img id=R style="position:absolute;opacity:.7;width:512px">
 </div>
 <button onclick=c(-1)><</button><button id=P onclick=p()>PLAY</button><button onclick=f()>LOAD</button><button onclick=c(1)>></button>
 <p id=M style="margin:0">Ready</p>
 <script>
-H=[];I=-1;y=-37.85;x=144.75;L=0;
+H=[];I=-1;y=-37.855;x=144.755;L=0;
 f=()=>{
  fetch('https://api.rainviewer.com/public/weather-maps.json').then(r=>r.json()).then(j=>{
   H=[];
   j.radar.past.slice(-6).map(o=>{
    let t=o.time,v=64,pX=x/360+.5,pY=(1-Math.log(Math.tan(y*Math.PI/180)+1/Math.cos(y*Math.PI/180))/Math.PI)/2,
-   img=new Image(); // Forces browser to cache
-   img.src=`${j.host}/v2/radar/${t}/256/6/${0|pX*v}/${0|pY*v}/2/1_1.webp`;
-   H.push({i:img,t:new Date(t*1000).toLocaleTimeString([],{hour:'2-digit',minute:'2-digit'}),x:128-(pX*v%1*512),y:128-(pY*v%1*512)});
+   u=`${j.host}/v2/radar/${t}/256/6/${0|pX*v}/${0|pY*v}/2/1_1.webp`;
+   H.push({u,t:new Date(t*1e3).toLocaleTimeString([],{hour:'2-digit',minute:'2-digit'}),x:128-(pX*v%1*512),y:128-(pY*v%1*512)});
   });
   I=H.length-1;d();
  })
 };
-d=()=>{if(H[I]){R.src=H[I].i.src;R.style.left=H[I].x+'px';R.style.top=H[I].y+'px';M.innerText=H[I].t}};
+d=()=>{if(H[I]){R.src=H[I].u;R.style.left=H[I].x+'px';R.style.top=H[I].y+'px';M.innerText=H[I].t}};
 c=n=>{I=(I+n+H.length)%H.length;d()};
 p=()=>{if(L){L=clearInterval(L);P.innerText='PLAY'}else{if(!H.length)f();L=setInterval(()=>c(1),600);P.innerText='STOP'}};
-</script>
+</script></html>
