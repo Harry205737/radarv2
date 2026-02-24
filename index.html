@@ -3,46 +3,72 @@
 <title>RADAR</title>
 <body bgcolor=#fff style=margin:0;overflow:hidden>
 
-<div style="position:relative;width:256px;height:256px;margin:auto;overflow:hidden;">
+<div style="position:relative;width:256px;height:256px;margin:auto;overflow:hidden;background:#000;">
  <div style="position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);z-index:9;pointer-events:none;color:white;text-shadow:1px 1px 2px black;">+</div>
  
- <div id=V style="background:url('128melradar.jpg') no-repeat;background-size:256px 256px;width:256px;height:256px"></div>
+ <div id=V style="background:url('128melradar.jpg') no-repeat;background-size:256px 256px;width:256px;height:256px;position:absolute;z-index:1;"></div>
  
- <div style="position:absolute;top:10px;right:10px;width:75px;border-bottom:2px solid #fff;text-align:right;font:10px sans-serif;color:white;text-shadow:1px 1px 2px black;">50km</div>
+ <div id=R_CONT style="position:absolute;top:0;left:0;width:256px;height:256px;z-index:2;overflow:hidden;">
+    <img id=RI style="position:absolute;opacity:0.7;">
+ </div>
+ 
+ <div style="position:absolute;top:10px;right:10px;width:75px;border-bottom:2px solid #fff;text-align:right;font:10px sans-serif;color:white;text-shadow:1px 1px 2px black;z-index:10;">50km</div>
 </div>
 
 <div style="text-align:center;margin-top:8px;">
  <button onclick=c(-1)><</button>
- <button onclick="f(-37.86, 144.75)">REFRESH</button>
+ <button onclick="f(-37.8552, 144.7556)">REFRESH</button>
  <button onclick=c(1)>></button>
- <p id=M style="margin:5px 0 0 0;font-family:sans-serif;font-size:14px;">Loading...</p>
+ <p id=M style="margin:5px 0 0 0;font-family:sans-serif;font-size:14px;">Aligning...</p>
 </div>
 
 <script>
-V=document.getElementById('V');M=document.getElementById('M');H=[];I=-1;
+V=document.getElementById('V');M=document.getElementById('M');RI=document.getElementById('RI');H=[];I=-1;
 
 f=(y,x)=>{
  fetch('https://api.rainviewer.com/public/weather-maps.json').then(r=>r.json()).then(j=>{
-  t=j.radar.past.at(-1).time;v=64;r=y*Math.PI/180;
-  X=0|(x+180)/360*v;Y=0|(1-Math.log(Math.tan(r)+1/Math.cos(r))/Math.PI)/2*v;
+  t=j.radar.past.at(-1).time;
+  z=6; v=Math.pow(2,z);
   
-  // Shift calculation: Adjusting the image position within the 256px container
-  // to center the specific Lat/Lon coordinate.
-  H.push({u:`${j.host}/v2/radar/${t}/256/6/${X}/${Y}/0/0_0.png`,s:new Date(t*1000).toLocaleTimeString()});
-  I=H.length-1;d()
- }).catch(e=>M.innerText='!');
+  // Calculate exact global pixel position
+  const xPixel = (x + 180) / 360 * v * 256;
+  const latRad = y * Math.PI / 180;
+  const yPixel = (1 - Math.log(Math.tan(latRad) + 1 / Math.cos(latRad)) / Math.PI) / 2 * v * 256;
+  
+  // Tile coordinates
+  const tileX = 0|(xPixel / 256);
+  const tileY = 0|(yPixel / 256);
+  
+  // Pixel offset within that specific tile
+  // We want this pixel to be at 128, 128 (center of your 256px map)
+  const offsetX = 128 - (xPixel % 256);
+  const offsetY = 128 - (yPixel % 256);
+
+  H.push({
+      u: `${j.host}/v2/radar/${t}/256/${z}/${tileX}/${tileY}/0/0_0.png`,
+      s: new Date(t * 1000).toLocaleTimeString(),
+      ox: offsetX,
+      oy: offsetY
+  });
+  
+  I = H.length - 1;
+  d();
+ }).catch(e => M.innerText = '!');
 };
 
-d=()=>{if(H[I]){
-    // Added 'margin-left: -35px' to shift the tile left so Laverton is centered
-    V.innerHTML=`<img src="${H[I].u}" width=256 height=256 style="display:block;opacity:0.7;margin-left:-35px;">`;
-    M.innerText=H[I].s
-}};
+d=()=>{
+    if(H[I]){
+        RI.src = H[I].u;
+        RI.style.left = H[I].ox + 'px';
+        RI.style.top = H[I].oy + 'px';
+        M.innerText = H[I].s;
+    }
+};
 
 c=n=>{if(H[I+n]){I+=n;d()}};
 
-// Initialize centered on Laverton
-f(-37.86, 144.75);
+// Initial load for Laverton
+f(-37.8552, 144.7556);
 </script>
 
 </body>
