@@ -1,11 +1,12 @@
 <!DOCTYPE html><html><title>RADAR</title>
-<body bgcolor=#000 style=margin:0;overflow:hidden;text-align:center;color:#fff;font:12px/1.5 sans-serif>
-<div style="position:relative;width:256px;height:256px;margin:auto;overflow:hidden;background:url('128melradar.jpg')0/256px">
- <div style="position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);z-index:9;text-shadow:1px 1px 2px#000">+</div>
- <img id=R style="position:absolute;opacity:.8;width:512px;image-rendering:pixelated">
-</div>
-<button onclick=c(-1)><</button><button onclick=f()>REFRESH</button><button onclick=c(1)>></button>
-<p id=M style=margin:0>...</p>
+<body style="margin:0;overflow:hidden;text-align:center;font:12px sans-serif;background:#fff">
+ <h2>128km Melbourne Radar</h2>
+ <div style="position:relative;width:256px;height:256px;margin:auto;overflow:hidden;background:url('128melradar.jpg')0/256px">
+  <div style="position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);z-index:9">+</div>
+  <img id=R style="position:absolute;opacity:.8;width:512px;image-rendering:pixelated">
+ </div>
+ <button onclick=c(-1)><</button><button onclick=f()>REFRESH</button><button onclick=c(1)>></button>
+ <p id=M>...</p>
 <script>
 H=[];I=-1;y=-37.855;x=144.755;
 f=()=>{fetch('https://api.rainviewer.com/public/weather-maps.json').then(r=>r.json()).then(j=>{
