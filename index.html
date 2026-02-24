@@ -15,34 +15,33 @@
 <p id=M style="margin:5px">Ready</p>
 
 <script>
-// SERVICE WORKER: Cache index and map for offline start
-if('serviceWorker' in navigator){
- const b=new Blob(['self.addEventListener("install",e=>e.waitUntil(caches.open("v1").then(c=>c.addAll(["./","index.html","mp.webp"]))));self.addEventListener("fetch",e=>e.respondWith(caches.match(e.request).then(r=>r||fetch(e.request))));'],{type:'text/javascript'});
- navigator.serviceWorker.register(URL.createObjectURL(b));
-}
-
 H=[];I=0;L=0;y=-37.855;x=144.755;
+
 E=t=>{
  let v=64,p=x/360+.5,q=(1-Math.log(Math.tan(y*Math.PI/180)+1/Math.cos(y*Math.PI/180))/Math.PI)/2;
  return [`https://api.rainviewer.com/v2/radar/${t}/256/6/${0|p*v}/${0|q*v}/2/1_1.webp`,128-(p*v%1*512),128-(q*v%1*512)]
 };
+
 w=()=>{let h=H[I];if(h){R.src=h.u;R.style.left=h.X+'px';R.style.top=h.Y+'px';M.innerText=h.t}};
+
 c=n=>{if(H.length){I=(I+n+H.length)%H.length;w()}};
+
 f=()=>{
  M.innerText='...';
  fetch('https://api.rainviewer.com/public/weather-maps.json').then(r=>r.json()).then(j=>{
   let t=j.radar.past.at(-1).time,[u,X,Y]=E(t);
   H=[{u,X,Y,t:new Date(t*1e3).toLocaleTimeString([],{hour:'2-digit',minute:'2-digit'})}];
   I=0;w()
- }).catch(e=>M.innerText='Offline')
+ }).catch(e=>M.innerText='Error')
 };
+
 p=()=>{
  if(L){L=clearInterval(L);P.innerText='PLAY'}
  else{
   P.innerText='STOP';
   fetch('https://api.rainviewer.com/public/weather-maps.json').then(r=>r.json()).then(j=>{
    H=j.radar.past.slice(-6).map(o=>{
-    let [u,X,Y]=E(o.time);new Image().src=u;
+    let [u,X,Y]=E(o.time);
     return {u,X,Y,t:new Date(o.time*1e3).toLocaleTimeString([],{hour:'2-digit',minute:'2-digit'})}
    });
    L=setInterval(()=>c(1),600)
