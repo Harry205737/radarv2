@@ -9,57 +9,49 @@
 <script>
 H=[];I=0;L=0;J=0;y=-37.85;x=144.75;
 
-// Auto-delete cached tiles older than 24 hours (86400 seconds)
+// Clean up local storage > 24 hours old
 for(k in localStorage)if(1*k&&k<Date.now()/1e3-86400)localStorage.removeItem(k);
 
-// Math for Zoom 6
 E=t=>{
  let v=64,p=x/360+.5,q=(1-Math.log(Math.tan(y*Math.PI/180)+1/Math.cos(y*Math.PI/180))/Math.PI)/2;
  return [`https://api.rainviewer.com/v2/radar/${t}/256/6/${0|p*v}/${0|q*v}/2/1_1.webp`,128-(p*v%1*512),128-(q*v%1*512)]
 };
 
-// Check LocalStorage -> Download if missing -> Save to LocalStorage as Base64
+// FIX: We added the allorigins proxy ONLY for the fetch request to bypass CORS
 S=(t,u,C)=>{
  let d=localStorage[t];
- d?C(d):fetch(u).then(r=>r.blob()).then(b=>{
+ d?C(d):fetch('https://api.allorigins.win/raw?url='+encodeURIComponent(u)).then(r=>r.blob()).then(b=>{
   let f=new FileReader;f.onload=()=>C(localStorage[t]=f.result);f.readAsDataURL(b)
- }).catch(e=>0) // Silently fail if completely offline
+ }).catch(e=>0) 
 };
 
-// Draw frame to screen
 w=()=>{
  let h=H[I];
  if(h&&h.d){R.src=h.d;R.style.left=h.X+'px';R.style.top=h.Y+'px';M.innerText=new Date(h.t*1e3).toLocaleTimeString([],{hour:'2-digit',minute:'2-digit'})}
 };
 
-// Next/Prev logic
 c=n=>{if(H.length){I=(I+n+H.length)%H.length;w()}};
 
-// LOAD Button Logic
 f=async()=>{
  M.innerText='...';
- // Attempt to fetch JSON list. If no signal, grab timestamps from LocalStorage instead
  let j=await fetch('https://api.rainviewer.com/public/weather-maps.json').then(r=>r.json()).catch(e=>0);
  J=j?j.radar.past.map(a=>a.time):Object.keys(localStorage).filter(k=>1*k).sort();
  
  if(J.length){
   let t=J.at(-1),[u,X,Y]=E(t);
-  H=[{t,X,Y}];I=0; // Load ONLY the current frame
+  H=[{t,X,Y}];I=0;
   S(t,u,d=>{H[0].d=d;w()})
  }else M.innerText='No Offline Data'
 };
 
-// PLAY Button Logic
 p=async()=>{
  if(L){L=clearInterval(L);P.innerText='PLAY'}
  else{
   P.innerText='STOP';
-  if(!J)await f(); // Fetch list if "Play" is clicked before "Load"
+  if(!J)await f();
   if(J&&J.length){
-   // Map out the last 6 frames from history
    H=J.slice(-6).map(t=>{
     let [u,X,Y]=E(t);
-    // Background load missing tiles into memory
     S(t,u,d=>{let h=H.find(a=>a.t==t);if(h){h.d=d;w()}});
     return {t,X,Y,d:localStorage[t]||''}
    });
