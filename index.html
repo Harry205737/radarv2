@@ -9,7 +9,7 @@
  <div id=V style="background:url('128melradar.jpg') no-repeat;background-size:256px 256px;width:256px;height:256px;position:absolute;z-index:1;"></div>
  
  <div id=R_CONT style="position:absolute;top:0;left:0;width:256px;height:256px;z-index:2;overflow:hidden;">
-    <img id=RI style="position:absolute;opacity:0.7;">
+    <img id=RI style="position:absolute;opacity:0.75;">
  </div>
  
  <div style="position:absolute;top:10px;right:10px;width:75px;border-bottom:2px solid #fff;text-align:right;font:10px sans-serif;color:white;text-shadow:1px 1px 2px black;z-index:10;">50km</div>
@@ -17,9 +17,9 @@
 
 <div style="text-align:center;margin-top:8px;">
  <button onclick=c(-1)><</button>
- <button onclick="f(-37.8552, 144.7556)">REFRESH</button>
+ <button onclick="f(-37.855, 144.755)">REFRESH</button>
  <button onclick=c(1)>></button>
- <p id=M style="margin:5px 0 0 0;font-family:sans-serif;font-size:14px;">Aligning...</p>
+ <p id=M style="margin:5px 0 0 0;font-family:sans-serif;font-size:14px;">Syncing Scale...</p>
 </div>
 
 <script>
@@ -28,24 +28,21 @@ V=document.getElementById('V');M=document.getElementById('M');RI=document.getEle
 f=(y,x)=>{
  fetch('https://api.rainviewer.com/public/weather-maps.json').then(r=>r.json()).then(j=>{
   t=j.radar.past.at(-1).time;
-  z=6; v=Math.pow(2,z);
+  // Zoom 8 is the correct match for the BoM 128km radius scale
+  z=8; v=Math.pow(2,z);
   
-  // Calculate exact global pixel position
   const xPixel = (x + 180) / 360 * v * 256;
   const latRad = y * Math.PI / 180;
   const yPixel = (1 - Math.log(Math.tan(latRad) + 1 / Math.cos(latRad)) / Math.PI) / 2 * v * 256;
   
-  // Tile coordinates
   const tileX = 0|(xPixel / 256);
   const tileY = 0|(yPixel / 256);
   
-  // Pixel offset within that specific tile
-  // We want this pixel to be at 128, 128 (center of your 256px map)
   const offsetX = 128 - (xPixel % 256);
   const offsetY = 128 - (yPixel % 256);
 
   H.push({
-      u: `${j.host}/v2/radar/${t}/256/${z}/${tileX}/${tileY}/0/0_0.png`,
+      u: `${j.host}/v2/radar/${t}/256/${z}/${tileX}/${tileY}/2/1_1.png`,
       s: new Date(t * 1000).toLocaleTimeString(),
       ox: offsetX,
       oy: offsetY
@@ -68,7 +65,7 @@ d=()=>{
 c=n=>{if(H[I+n]){I+=n;d()}};
 
 // Initial load for Laverton
-f(-37.8552, 144.7556);
+f(-37.855, 144.755);
 </script>
 
 </body>
