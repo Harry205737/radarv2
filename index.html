@@ -1,73 +1,52 @@
 <!DOCTYPE html><html><title>Radar</title>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1, user-scalable=yes">
+<meta name="viewport" content="width=device-width,user-scalable=yes">
 <meta name="apple-mobile-web-app-capable" content="yes">
-<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<body style="margin:0;text-align:center;font-family:sans-serif">
 
-<body style="margin:0;text-align:center;background:#fff;color:#000;font-family:sans-serif">
-
-<div style="position:relative;width:256px;height:256px;margin:20px auto;overflow:hidden;background:url(mp.webp)0/256px;border:1px solid #ddd">
+<div style="position:relative;width:256px;height:256px;margin:10px auto;overflow:hidden;background:url(mp.webp)0/256px;border:1px solid #ccc">
  <div style="position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);z-index:9;text-shadow:1px 1px 1px #fff">+</div>
  <img id=R style="position:absolute;opacity:.7;width:512px;image-rendering:pixelated">
 </div>
 
-<div style="margin-bottom:10px">
- <button onclick=c(-1) style="padding:10px"><</button>
- <button id=P onclick=p() style="padding:10px 20px">PLAY</button>
- <button onclick=f() style="padding:10px 20px">LOAD</button>
- <button onclick=c(1) style="padding:10px">></button>
-</div>
-<p id=M>Ready</p>
+<button onclick=c(-1)><</button>
+<button id=P onclick=p()>PLAY</button>
+<button onclick=f()>LOAD</button>
+<button onclick=c(1)>></button>
+<p id=M style="margin:5px">Ready</p>
 
 <script>
-// SERVICE WORKER - Forces index and map image to stay on phone disk
-if ('serviceWorker' in navigator) {
-  const swCode = `
-    const cacheName = 'radar-v2';
-    self.addEventListener('install', e => e.waitUntil(caches.open(cacheName).then(c => c.addAll(['./', 'index.html', 'mp.webp']))));
-    self.addEventListener('fetch', e => e.respondWith(caches.match(e.request).then(r => r || fetch(e.request))));
-  `;
-  const blob = new Blob([swCode], {type: 'text/javascript'});
-  navigator.serviceWorker.register(URL.createObjectURL(blob));
+// SERVICE WORKER: Cache index and map for offline start
+if('serviceWorker' in navigator){
+ const b=new Blob(['self.addEventListener("install",e=>e.waitUntil(caches.open("v1").then(c=>c.addAll(["./","index.html","mp.webp"]))));self.addEventListener("fetch",e=>e.respondWith(caches.match(e.request).then(r=>r||fetch(e.request))));'],{type:'text/javascript'});
+ navigator.serviceWorker.register(URL.createObjectURL(b));
 }
 
-// RADAR LOGIC
 H=[];I=0;L=0;y=-37.855;x=144.755;
-
 E=t=>{
  let v=64,p=x/360+.5,q=(1-Math.log(Math.tan(y*Math.PI/180)+1/Math.cos(y*Math.PI/180))/Math.PI)/2;
  return [`https://api.rainviewer.com/v2/radar/${t}/256/6/${0|p*v}/${0|q*v}/2/1_1.webp`,128-(p*v%1*512),128-(q*v%1*512)]
 };
-
-w=()=>{
- let h=H[I];
- if(h){R.src=h.u;R.style.left=h.X+'px';R.style.top=h.Y+'px';M.innerText=h.t}
-};
-
+w=()=>{let h=H[I];if(h){R.src=h.u;R.style.left=h.X+'px';R.style.top=h.Y+'px';M.innerText=h.t}};
 c=n=>{if(H.length){I=(I+n+H.length)%H.length;w()}};
-
 f=()=>{
  M.innerText='...';
  fetch('https://api.rainviewer.com/public/weather-maps.json').then(r=>r.json()).then(j=>{
   let t=j.radar.past.at(-1).time,[u,X,Y]=E(t);
   H=[{u,X,Y,t:new Date(t*1e3).toLocaleTimeString([],{hour:'2-digit',minute:'2-digit'})}];
-  I=0;w();
- }).catch(e=>M.innerText='Offline');
+  I=0;w()
+ }).catch(e=>M.innerText='Offline')
 };
-
 p=()=>{
  if(L){L=clearInterval(L);P.innerText='PLAY'}
  else{
   P.innerText='STOP';
   fetch('https://api.rainviewer.com/public/weather-maps.json').then(r=>r.json()).then(j=>{
    H=j.radar.past.slice(-6).map(o=>{
-    let [u,X,Y]=E(o.time);
-    new Image().src=u; 
+    let [u,X,Y]=E(o.time);new Image().src=u;
     return {u,X,Y,t:new Date(o.time*1e3).toLocaleTimeString([],{hour:'2-digit',minute:'2-digit'})}
    });
-   L=setInterval(()=>c(1),600);
-  });
+   L=setInterval(()=>c(1),600)
+  })
  }
 };
-</script>
-</body></html>
+</script></html>
