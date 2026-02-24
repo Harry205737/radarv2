@@ -1,29 +1,34 @@
-<!DOCTYPE html><html><title>RADAR</title>
-<body style="text-align:center;font:sans-serif;background:#fff">
- <h3>128km Melbourne Radar</h3>
- <div style="position:relative;width:256px;height:256px;margin:auto;overflow:hidden;background:url('128melradar.jpg')0/256px">
+<!DOCTYPE html><html><title>RADAR LITE</title>
+<body style="text-align:center;font:12px sans-serif;background:#fff">
+ <div style="position:relative;width:256px;height:256px;margin:auto;overflow:hidden;background:#eee">
   <div style="position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);z-index:9;text-shadow:1px 1px 1px #fff">+</div>
+  <img src="128melradar.jpg" style="width:256px;height:256px;position:absolute;left:0;top:0">
   <img id=R style="position:absolute;opacity:.7;width:512px;image-rendering:pixelated">
  </div>
+ 
  <div style="margin-top:10px">
-  <button onclick=c(-1)><</button>
-  <button id=PB onclick=p()>PLAY</button>
-  <button onclick=f()>REFRESH</button>
-  <button onclick=c(1)>></button>
+  <button onclick="f()" id=RB>LOAD RADAR</button>
+  <button onclick="p()" id=PB>PLAY LOOP</button>
  </div>
- <p id=M style="color:#666">...</p>
+ <p id=M style="color:#666">Ready (No data used)</p>
+
 <script>
 H=[];I=-1;y=-37.855;x=144.755;L=0;
-f=()=>{fetch('https://api.rainviewer.com/public/weather-maps.json').then(r=>r.json()).then(j=>{
- H=[]; // Clear history to save memory
- j.radar.past.slice(-10).forEach(o=>{ // Grab last 10 frames
-  t=o.time;v=64;
-  pX=x/360+.5;pY=(1-Math.log(Math.tan(y*Math.PI/180)+1/Math.cos(y*Math.PI/180))/Math.PI)/2;
-  H.push({u:`${j.host}/v2/radar/${t}/256/6/${0|pX*v}/${0|pY*v}/2/1_1.png`,t:new Date(t*1000).toLocaleTimeString(),x:128-(pX*v%1*512),y:128-(pY*v%1*512)});
- });
- I=H.length-1;d()})};
+// We changed the format to .webp for massive bandwidth savings
+f=()=>{ 
+ RB.innerText='...';
+ fetch('https://api.rainviewer.com/public/weather-maps.json').then(r=>r.json()).then(j=>{
+  H=[];
+  // Grab only 6 frames instead of 10 for a shorter/lighter loop
+  j.radar.past.slice(-6).forEach(o=>{ 
+   t=o.time;v=64;pX=x/360+.5;pY=(1-Math.log(Math.tan(y*Math.PI/180)+1/Math.cos(y*Math.PI/180))/Math.PI)/2;
+   // Using {t}.webp instead of {t}.png saves ~40% data
+   H.push({u:`${j.host}/v2/radar/${t}/256/6/${0|pX*v}/${0|pY*v}/2/1_1.webp`,t:new Date(t*1000).toLocaleTimeString(),x:128-(pX*v%1*512),y:128-(pY*v%1*512)});
+  });
+  I=H.length-1;d();RB.innerText='REFRESH';
+ }).catch(e=>{M.innerText='Signal too weak';RB.innerText='RETRY'});
+};
 d=()=>{if(H[I]){R.src=H[I].u;R.style.left=H[I].x+'px';R.style.top=H[I].y+'px';M.innerText=H[I].t}};
-c=n=>{if(H[I+n]){I+=n;d()}else if(n>0)I=0,d()}; // Loop back to start if playing
-p=()=>{if(L){clearInterval(L);L=0;PB.innerText='PLAY'}else{L=setInterval(()=>c(1),600);PB.innerText='STOP'}};
-f();
+c=n=>{if(H[I+n]){I+=n;d()}else if(n>0)I=0,d()};
+p=()=>{if(L){clearInterval(L);L=0;PB.innerText='PLAY'}else{if(H.length<2){f()}L=setInterval(()=>c(1),800);PB.innerText='STOP'}};
 </script></html>
